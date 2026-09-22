@@ -1,18 +1,21 @@
 import { redirect } from "next/navigation";
 
 import { ChatApp } from "@/components/chat/chat-app";
-import { getUserWithProfile } from "@/lib/auth/get-user";
+import { getProfile, getUser } from "@/lib/auth/get-user";
 import { getConversationsForUser } from "@/lib/chat/conversations";
 import type { ChatUserSummary } from "@/types/chat-ui";
 
 export default async function HomePage() {
-  const session = await getUserWithProfile();
+  const user = await getUser();
 
-  if (!session) {
+  if (!user) {
     redirect("/login");
   }
 
-  const { user, profile } = session;
+  const [profile, initialChats] = await Promise.all([
+    getProfile(user.id),
+    getConversationsForUser(user.id),
+  ]);
 
   const chatUser: ChatUserSummary = {
     id: user.id,
@@ -21,8 +24,6 @@ export default async function HomePage() {
     username: profile?.username,
     avatarUrl: profile?.avatar_url,
   };
-
-  const initialChats = await getConversationsForUser(user.id);
 
   return <ChatApp user={chatUser} initialChats={initialChats} />;
 }

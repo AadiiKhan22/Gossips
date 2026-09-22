@@ -1,11 +1,12 @@
 "use client";
 
-import { Mic, Paperclip, Reply, Send, Trash2, X } from "lucide-react";
+import { Camera, Mic, Paperclip, Reply, Send, Smile, Trash2, X } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoiceRecorder } from "@/lib/chat/use-voice-recorder";
+import { playMessageSentSound, playRecordStartSound } from "@/lib/audio/ui-sounds";
 import { uploadChatMedia, type ChatAttachment } from "@/lib/storage/chat-media";
 import type { Message } from "@/types/database";
 
@@ -20,6 +21,11 @@ interface MessageComposerProps {
 }
 
 const MAX_LENGTH = 5000;
+
+const QUICK_EMOJIS = [
+  "😀", "😂", "😍", "😊", "😉", "😘", "😢", "😮", "😡", "👍",
+  "👎", "🙏", "👏", "🔥", "🎉", "❤️", "💯", "😴", "🤔", "😎",
+];
 
 export function MessageComposer({
   conversationId,
@@ -36,6 +42,39 @@ export function MessageComposer({
   const [isUploading, setIsUploading] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const emojiPopoverRef = React.useRef<HTMLDivElement>(null);
+  const [emojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!emojiPickerOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (emojiPopoverRef.current && !emojiPopoverRef.current.contains(event.target as Node)) {
+        setEmojiPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [emojiPickerOpen]);
+
+  function insertEmoji(emoji: string) {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => prev + emoji);
+      return;
+    }
+    const start = textarea.selectionStart ?? content.length;
+    const end = textarea.selectionEnd ?? content.length;
+    const next = content.slice(0, start) + emoji + content.slice(end);
+    setContent(next);
+    onTyping?.();
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursor = start + emoji.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }
 
   const recorder = useVoiceRecorder();
 
@@ -68,6 +107,7 @@ export function MessageComposer({
       const attachment = await uploadChatMedia(file, conversationId, durationSeconds);
       setIsUploading(false);
       await onSend("", attachment, replyingTo?.id);
+      playMessageSentSound();
       setSelectedFile(null);
       onCancelReply?.();
       onStoppedTyping?.();
@@ -113,6 +153,7 @@ export function MessageComposer({
       }
 
       await onSend(trimmed, attachment, replyingTo?.id);
+      playMessageSentSound();
       setContent("");
       setSelectedFile(null);
       onCancelReply?.();
@@ -234,6 +275,15 @@ export function MessageComposer({
             onChange={handleFilePick}
             aria-hidden="true"
           />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleFilePick}
+            aria-hidden="true"
+          />
           <Button
             type="button"
             variant="outline"
@@ -242,25 +292,62 @@ export function MessageComposer({
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach file"
           >
-            <Paperclip className="size-4" />
+            <Paperclip className="text-gossip size-4" />
           </Button>
-          <Textarea
-            value={content}
-            onChange={(event) => {
-              setContent(event.target.value);
-              if (event.target.value.trim()) {
-                onTyping?.();
-              } else {
-                onStoppedTyping?.();
-              }
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            rows={1}
-            disabled={busy}
-            aria-label="Message input"
-            className="max-h-32 min-h-10 resize-none"
-          />
+          <div className="relative flex-1">
+            <Textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(event) => {
+                setContent(event.target.value);
+                if (event.target.value.trim()) {
+                  onTyping?.();
+                } else {
+                  onStoppedTyping?.();
+                }
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              rows={1}
+              disabled={busy}
+              aria-label="Message input"
+              className="max-h-32 min-h-10 resize-none pr-10"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setEmojiPickerOpen((prev) => !prev)}
+              aria-label="Insert emoji"
+              aria-expanded={emojiPickerOpen}
+              className="text-muted-foreground hover:text-foreground absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-full transition-colors"
+            >
+              <Smile className="size-4" />
+            </button>
+
+            {emojiPickerOpen ? (
+              <div
+                ref={emojiPopoverRef}
+                role="dialog"
+                aria-label="Emoji picker"
+                className="bg-popover absolute bottom-[calc(100%+0.5rem)] right-0 z-20 grid w-64 grid-cols-8 gap-1 rounded-xl border border-border/80 p-2 shadow-lg"
+              >
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      insertEmoji(emoji);
+                      setEmojiPickerOpen(false);
+                    }}
+                    className="hover:bg-muted flex size-7 items-center justify-center rounded-md text-lg"
+                    aria-label={`Insert ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           {content.trim() || selectedFile ? (
             <Button
               type="submit"
@@ -272,16 +359,31 @@ export function MessageComposer({
               <Send className="size-4" />
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={busy}
-              onClick={recorder.start}
-              aria-label="Record voice message"
-            >
-              <Mic className="size-4" />
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={busy}
+                onClick={() => cameraInputRef.current?.click()}
+                aria-label="Take photo"
+              >
+                <Camera className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={busy}
+                onClick={() => {
+                  playRecordStartSound();
+                  recorder.start();
+                }}
+                aria-label="Record voice message"
+              >
+                <Mic className="text-gossip size-4" />
+              </Button>
+            </>
           )}
         </div>
       )}

@@ -10,19 +10,20 @@ interface ChatSearchProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  placeholder?: string;
 }
 
-export function ChatSearch({ value, onChange, className }: ChatSearchProps) {
+export function ChatSearch({ value, onChange, className, placeholder = "Search chats..." }: ChatSearchProps) {
   return (
     <div className={cn("relative", className)}>
       <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
       <Input
         type="search"
-        placeholder="Search chats..."
+        placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="bg-background/80 pl-9"
-        aria-label="Search chats"
+        aria-label={placeholder.replace("...", "")}
       />
       {value ? (
         <button

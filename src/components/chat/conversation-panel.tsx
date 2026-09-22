@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, ChevronUp, MoreVertical, Search, ShieldOff, UserX, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, MoreVertical, Phone, Search, ShieldOff, UserX, Video, X } from "lucide-react";
 import * as React from "react";
 
+import { useCallContext } from "@/components/calls/call-provider";
 import { MessageComposer } from "@/components/chat/message-composer";
 import { MessageList } from "@/components/chat/message-list";
 import { UserAvatar } from "@/components/chat/user-avatar";
@@ -19,6 +20,8 @@ interface ConversationPanelProps {
   messages: Message[];
   messagesLoading?: boolean;
   currentUserId: string;
+  currentUserAvatarUrl?: string | null;
+  currentUserName?: string;
   otherReadAt?: string | null;
   senderNamesById?: Map<string, string>;
   reactionsByMessageId?: Map<string, ReactionSummary[]>;
@@ -46,6 +49,8 @@ export function ConversationPanel({
   messages,
   messagesLoading = false,
   currentUserId,
+  currentUserAvatarUrl,
+  currentUserName,
   otherReadAt = null,
   senderNamesById,
   reactionsByMessageId,
@@ -67,6 +72,7 @@ export function ConversationPanel({
   onToggleBlock,
   className,
 }: ConversationPanelProps) {
+  const { placeCall } = useCallContext();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeMatchIndex, setActiveMatchIndex] = React.useState(0);
@@ -232,6 +238,29 @@ export function ConversationPanel({
               <Search className="size-4" />
             </Button>
 
+            {!conversation.isGroup && conversation.otherUserId ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => placeCall(conversation.id, conversation.otherUserId!, "audio")}
+                  aria-label="Voice call"
+                >
+                  <Phone className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => placeCall(conversation.id, conversation.otherUserId!, "video")}
+                  aria-label="Video call"
+                >
+                  <Video className="size-4" />
+                </Button>
+              </>
+            ) : null}
+
             {!conversation.isGroup && onToggleBlock ? (
               <div className="relative" ref={menuRef}>
                 <Button
@@ -292,6 +321,10 @@ export function ConversationPanel({
       <MessageList
         messages={messages}
         currentUserId={currentUserId}
+        currentUserAvatarUrl={currentUserAvatarUrl}
+        currentUserName={currentUserName}
+        otherAvatarUrl={conversation.avatarUrl}
+        otherName={conversation.name}
         isLoading={messagesLoading}
         otherReadAt={otherReadAt}
         isGroup={conversation.isGroup}

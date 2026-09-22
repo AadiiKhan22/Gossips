@@ -1,9 +1,11 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-export async function getUser() {
+export const getUser = cache(async function getUser() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,9 +17,9 @@ export async function getUser() {
   }
 
   return user;
-}
+});
 
-export async function getProfile(userId: string): Promise<Profile | null> {
+export const getProfile = cache(async function getProfile(userId: string): Promise<Profile | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
 
@@ -26,7 +28,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   }
 
   return data;
-}
+});
 
 export async function getUserWithProfile() {
   const user = await getUser();

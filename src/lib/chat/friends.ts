@@ -49,11 +49,18 @@ export async function searchUsersWithFriendStatus(
   return (profiles as ProfilePreview[])
     .filter((profile) => !blockedIds.has(profile.id))
     .map((profile) => {
-    const relevant = (requests ?? []).find(
+    // If duplicate rows exist for the same pair (shouldn't happen going
+    // forward, see the prevent_duplicate_friend_request trigger), prefer the
+    // strongest relationship: accepted > pending > anything else.
+    const statusRank: Record<string, number> = { accepted: 2, pending: 1 };
+    const candidates = (requests ?? []).filter(
       (request) =>
         (request.sender_id === currentUserId && request.receiver_id === profile.id) ||
         (request.receiver_id === currentUserId && request.sender_id === profile.id),
-    ) as Pick<FriendRequest, "id" | "sender_id" | "receiver_id" | "status"> | undefined;
+    );
+    const relevant = candidates.sort(
+      (a, b) => (statusRank[b.status] ?? 0) - (statusRank[a.status] ?? 0),
+    )[0] as Pick<FriendRequest, "id" | "sender_id" | "receiver_id" | "status"> | undefined;
 
     let friendStatus: FriendStatus = "none";
     if (relevant?.status === "accepted") {
@@ -80,6 +87,23 @@ export async function sendFriendRequest(
   otherUserId: string,
 ): Promise<void> {
   const supabase = createClient();
+
+  // Guard against duplicate rows: don't insert a new request if any
+  // relationship (pending or accepted) already exists between these users.
+  const { data: existing } = await supabase
+    .from("friend_requests")
+    .select("id, status")
+    .or(
+      `and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`,
+    )
+    .in("status", ["pending", "accepted"])
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.status === "accepted") throw new Error("You're already friends.");
+    throw new Error("A friend request is already pending.");
+  }
+
   const { error } = await supabase
     .from("friend_requests")
     .insert({ sender_id: currentUserId, receiver_id: otherUserId });

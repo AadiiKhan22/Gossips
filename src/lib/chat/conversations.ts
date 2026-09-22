@@ -31,30 +31,34 @@ export async function getConversationsForUser(userId: string): Promise<ChatListI
   );
   const conversationIds = visibleMemberships.map((row) => row.conversation_id);
 
-  const { data: conversations, error: conversationsError } = await supabase
-    .from("conversations")
-    .select("id, type, name, updated_at")
-    .in("id", conversationIds)
-    .order("updated_at", { ascending: false });
+  const [conversationsResult, membersResult, messagesResult] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("id, type, name, updated_at")
+      .in("id", conversationIds)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("conversation_members")
+      .select("conversation_id, user_id, profiles(id, username, display_name, avatar_url)")
+      .in("conversation_id", conversationIds),
+    supabase
+      .from("messages")
+      .select("conversation_id, content, attachment_url, attachment_type, attachment_name, created_at, sender_id")
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false }),
+  ]);
 
+  const { data: conversations, error: conversationsError } = conversationsResult;
   if (conversationsError || !conversations?.length) {
     return [];
   }
 
-  const { data: members, error: membersError } = await supabase
-    .from("conversation_members")
-    .select("conversation_id, user_id, profiles(id, username, display_name, avatar_url)")
-    .in("conversation_id", conversationIds);
-
+  const { data: members, error: membersError } = membersResult;
   if (membersError || !members) {
     return [];
   }
 
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select("conversation_id, content, attachment_url, attachment_type, attachment_name, created_at, sender_id")
-    .in("conversation_id", conversationIds)
-    .order("created_at", { ascending: false });
+  const { data: messages, error: messagesError } = messagesResult;
 
   if (messagesError) {
     return sortAndStripState(

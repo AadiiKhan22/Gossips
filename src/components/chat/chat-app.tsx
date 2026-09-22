@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ChatMainPanel } from "@/components/chat/chat-main-panel";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
+import { CallProvider } from "@/components/calls/call-provider";
 import type { ChatManageAction } from "@/components/chat/chat-list-item";
 import { ConversationPanel } from "@/components/chat/conversation-panel";
 import { ForwardDialog } from "@/components/chat/forward-dialog";
@@ -26,6 +27,7 @@ import {
   toggleMuteConversation,
   togglePinConversation,
 } from "@/lib/chat/chat-management";
+import { playMessageReceivedSound } from "@/lib/audio/ui-sounds";
 import { deleteMessage, editMessage } from "@/lib/chat/message-actions";
 import {
   fetchUnreadCounts,
@@ -485,6 +487,8 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
           const chat = chatsRef.current.find((item) => item.id === newMessage.conversation_id);
           if (chat?.isMuted) return;
 
+          playMessageReceivedSound();
+
           showMessageNotification({
             senderName: chat?.name ?? "New message",
             body: previewTextFor(newMessage) || "Sent an attachment",
@@ -638,7 +642,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
   }
 
   return (
-    <>
+    <CallProvider currentUserId={user.id} onlineUserIds={onlineUserIds}>
       <div aria-live="polite" role="status" className="sr-only">
         {liveAnnouncement}
       </div>
@@ -670,6 +674,8 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
             messages={messages}
             messagesLoading={messagesLoading}
             currentUserId={user.id}
+            currentUserAvatarUrl={user.avatarUrl}
+            currentUserName={user.displayName}
             otherReadAt={otherReadAt}
             senderNamesById={senderNamesById}
             reactionsByMessageId={reactionsByMessageId}
@@ -724,7 +730,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
         onClose={() => setForwardingMessage(null)}
         onForwarded={handleForwarded}
       />
-    </>
+    </CallProvider>
   );
 }
 

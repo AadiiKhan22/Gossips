@@ -1,6 +1,7 @@
 "use client";
 
 import { ImageLightbox } from "@/components/chat/image-lightbox";
+import { VoiceMessageBubble } from "@/components/chat/voice-message-bubble";
 import {
   Check,
   CheckCheck,
@@ -8,7 +9,6 @@ import {
   Copy,
   FileText,
   Forward,
-  Mic,
   Pencil,
   Reply,
   Smile,
@@ -32,6 +32,7 @@ interface MessageBubbleProps {
   isSeen?: boolean;
   isGroup?: boolean;
   senderName?: string;
+  avatarUrl?: string | null;
   replyToMessage?: Message | null;
   reactions?: ReactionSummary[];
   onReply?: (message: Message) => void;
@@ -47,6 +48,7 @@ export function MessageBubble({
   isSeen = false,
   isGroup = false,
   senderName,
+  avatarUrl,
   replyToMessage,
   reactions = [],
   onReply,
@@ -265,6 +267,85 @@ export function MessageBubble({
           </div>
         ) : null}
 
+        {message.attachment_url &&
+        isImageAttachment &&
+        !isEditing &&
+        !replyToMessage &&
+        !message.is_forwarded &&
+        !(isGroup && !isOwn && senderName) ? (
+          // Borderless photo message: no bubble background/padding, just the
+          // rounded image (with an optional caption underneath) and the
+          // timestamp overlaid on the image itself.
+          <div className={cn("w-72 max-w-full sm:w-80", isOwn ? "ml-auto" : "mr-auto")}>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="block w-full cursor-zoom-in"
+                aria-label="Open image"
+              >
+                <Image
+                  src={message.attachment_url}
+                  alt={message.attachment_name ?? "Image attachment"}
+                  width={480}
+                  height={360}
+                  sizes="(max-width: 640px) 85vw, 320px"
+                  className={cn(
+                    "max-h-80 w-full object-cover shadow-xs",
+                    isOwn ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md",
+                  )}
+                />
+              </button>
+              {!message.content ? (
+                <div className="absolute bottom-1.5 right-2 flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[11px] text-white">
+                  <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
+                  {isOwn ? (
+                    isSeen ? (
+                      <CheckCheck className="size-3.5" aria-label="Seen" />
+                    ) : (
+                      <Check className="size-3.5" aria-label="Sent" />
+                    )
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            {message.content ? (
+              <div className="px-1 pt-1.5">
+                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                  {message.content}
+                </p>
+                <div className="text-muted-foreground mt-0.5 flex items-center justify-end gap-1 text-[11px]">
+                  {message.edited_at ? <span className="italic">edited</span> : null}
+                  <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
+                  {isOwn ? (
+                    isSeen ? (
+                      <CheckCheck className="size-3.5" aria-label="Seen" />
+                    ) : (
+                      <Check className="size-3.5" aria-label="Sent" />
+                    )
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : message.attachment_url &&
+          isAudioAttachment &&
+          !isEditing &&
+          !replyToMessage &&
+          !message.is_forwarded &&
+          !(isGroup && !isOwn && senderName) ? (
+          <VoiceMessageBubble
+            src={message.attachment_url}
+            durationSeconds={message.attachment_duration_seconds}
+            createdAt={message.created_at}
+            isOwn={isOwn}
+            isSeen={isSeen}
+            messageId={message.id}
+            avatarUrl={avatarUrl}
+            senderName={senderName}
+          />
+        ) : (
         <div
           className={cn(
             "rounded-2xl px-4 py-2 text-sm shadow-xs",
@@ -319,18 +400,6 @@ export function MessageBubble({
                 className="max-h-64 w-full rounded-lg object-cover"
               />
             </button>
-          ) : null}
-
-          {message.attachment_url && isAudioAttachment ? (
-            <div className="mb-2 flex items-center gap-2">
-              <Mic className="size-4 shrink-0" />
-              <audio controls src={message.attachment_url} className="h-9 max-w-56 flex-1" />
-              {message.attachment_duration_seconds ? (
-                <span className="shrink-0 text-[11px] tabular-nums opacity-80">
-                  {formatDuration(message.attachment_duration_seconds)}
-                </span>
-              ) : null}
-            </div>
           ) : null}
 
           {message.attachment_url && !isImageAttachment && !isAudioAttachment ? (
@@ -391,23 +460,26 @@ export function MessageBubble({
             <p className="text-destructive mt-1 text-xs">{actionError}</p>
           ) : null}
 
-          <div
-            className={cn(
-              "mt-1 flex items-center justify-end gap-1 text-[11px]",
-              isOwn ? "text-gossip-foreground/80" : "text-muted-foreground",
-            )}
-          >
-            {message.edited_at ? <span className="italic">edited</span> : null}
-            <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
-            {isOwn ? (
-              isSeen ? (
-                <CheckCheck className="size-3.5" aria-label="Seen" />
-              ) : (
-                <Check className="size-3.5" aria-label="Sent" />
-              )
-            ) : null}
-          </div>
+          {!(isAudioAttachment && !message.content) ? (
+            <div
+              className={cn(
+                "mt-1 flex items-center justify-end gap-1 text-[11px]",
+                isOwn ? "text-gossip-foreground/80" : "text-muted-foreground",
+              )}
+            >
+              {message.edited_at ? <span className="italic">edited</span> : null}
+              <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
+              {isOwn ? (
+                isSeen ? (
+                  <CheckCheck className="size-3.5" aria-label="Seen" />
+                ) : (
+                  <Check className="size-3.5" aria-label="Sent" />
+                )
+              ) : null}
+            </div>
+          ) : null}
         </div>
+        )}
 
         {reactions.length > 0 ? (
           <div className={cn("mt-1 flex flex-wrap gap-1", isOwn ? "justify-end" : "justify-start")}>
@@ -475,10 +547,4 @@ function attachmentLabel(message: Message): string {
   if (message.attachment_type?.startsWith("audio/")) return "🎤 Voice message";
   if (message.attachment_url) return `📎 ${message.attachment_name ?? "Attachment"}`;
   return "";
-}
-
-function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

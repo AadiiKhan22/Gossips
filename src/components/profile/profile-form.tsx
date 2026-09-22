@@ -1,5 +1,6 @@
 "use client";
 
+import { Camera } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -21,9 +22,10 @@ import type { Profile } from "@/lib/auth/get-user";
 
 interface ProfileFormProps {
   profile: Profile;
+  email: string;
 }
 
-export function ProfileForm({ profile }: ProfileFormProps) {
+export function ProfileForm({ profile, email }: ProfileFormProps) {
   const router = useRouter();
 
   const [username, setUsername] = React.useState(profile.username ?? "");
@@ -47,6 +49,16 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     try {
       const publicUrl = await uploadAvatar(file, profile.id);
       setAvatarUrl(publicUrl);
+      const { error } = await createClient()
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", profile.id);
+      if (error) {
+        setFormError(error.message);
+      } else {
+        setSuccessMessage("Profile picture updated.");
+        router.refresh();
+      }
     } catch (uploadError) {
       setFormError(uploadError instanceof Error ? uploadError.message : "Failed to upload image.");
     } finally {
@@ -114,21 +126,32 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       ) : null}
 
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-        <div className="bg-gossip/10 text-gossip flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70">
-          {avatarPreview ? (
-            <Image
-              src={avatarPreview}
-              alt={`${displayName || "User"} avatar`}
-              width={80}
-              height={80}
-              className="size-full object-cover"
-              unoptimized
-            />
-          ) : (
-            <span className="text-2xl font-semibold">
-              {(displayName || username || "?").charAt(0).toUpperCase()}
-            </span>
-          )}
+        <div className="relative shrink-0">
+          <div className="bg-gossip/10 text-gossip flex size-20 items-center justify-center overflow-hidden rounded-full border border-border/70">
+            {avatarPreview ? (
+              <Image
+                src={avatarPreview}
+                alt={`${displayName || "User"} avatar`}
+                width={80}
+                height={80}
+                className="size-full object-cover"
+                unoptimized
+              />
+            ) : (
+              <span className="text-2xl font-semibold">
+                {(displayName || username || "?").charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label="Change profile picture"
+            disabled={isLoading || isUploadingAvatar}
+            onClick={() => avatarFileInputRef.current?.click()}
+            className="bg-gossip absolute -right-1 -bottom-1 flex size-8 items-center justify-center rounded-full border-2 border-background text-white shadow-md transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            <Camera className="size-4" />
+          </button>
         </div>
         <div className="w-full space-y-2">
           <Label htmlFor="avatarUrl">Avatar URL</Label>
@@ -168,6 +191,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" type="email" value={email} readOnly disabled />
+        <p className="text-muted-foreground text-xs">The email you&apos;re signed in with.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

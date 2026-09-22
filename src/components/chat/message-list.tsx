@@ -10,6 +10,10 @@ import type { Message } from "@/types/database";
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
+  currentUserAvatarUrl?: string | null;
+  currentUserName?: string;
+  otherAvatarUrl?: string | null;
+  otherName?: string;
   isLoading?: boolean;
   /** Other member's last_read_at ISO string, or null if they haven't read yet. */
   otherReadAt?: string | null;
@@ -28,6 +32,10 @@ interface MessageListProps {
 export function MessageList({
   messages,
   currentUserId,
+  currentUserAvatarUrl,
+  otherAvatarUrl,
+  currentUserName,
+  otherName,
   isLoading = false,
   otherReadAt = null,
   isGroup = false,
@@ -107,7 +115,8 @@ export function MessageList({
               isOwn={isOwn}
               isSeen={isSeen}
               isGroup={isGroup}
-              senderName={senderNamesById?.get(message.sender_id)}
+              senderName={senderNamesById?.get(message.sender_id) ?? (isOwn ? currentUserName : otherName)}
+              avatarUrl={isOwn ? currentUserAvatarUrl : otherAvatarUrl}
               replyToMessage={replyToMessage}
               reactions={reactionsByMessageId?.get(message.id) ?? []}
               onReply={onReply}

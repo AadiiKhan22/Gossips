@@ -52,3 +52,18 @@ export type BlockedUserSummary = {
   displayName: string;
   avatarUrl: string | null;
 };
+
+export type CallDirection = "outgoing" | "incoming";
+
+export type CallLogItem = {
+  id: string;
+  conversationId: string;
+  otherUserId: string;
+  otherUserName: string;
+  otherUserAvatarUrl: string | null;
+  callType: "audio" | "video";
+  status: "ringing" | "accepted" | "declined" | "missed" | "ended" | "cancelled" | "failed";
+  direction: CallDirection;
+  startedAt: string;
+  durationSeconds: number;
+};

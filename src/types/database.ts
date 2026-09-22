@@ -8,6 +8,16 @@ export type Json =
 
 export type ConversationType = "direct" | "group";
 export type FriendRequestStatus = "pending" | "accepted" | "rejected";
+export type CallType = "audio" | "video";
+export type CallStatus =
+  | "ringing"
+  | "accepted"
+  | "declined"
+  | "missed"
+  | "ended"
+  | "cancelled"
+  | "failed";
+export type CallSignalType = "offer" | "answer" | "ice-candidate";
 
 export interface Database {
   public: {
@@ -315,6 +325,119 @@ export interface Database {
           },
         ];
       };
+      calls: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          caller_id: string;
+          callee_id: string;
+          call_type: CallType;
+          status: CallStatus;
+          started_at: string;
+          answered_at: string | null;
+          ended_at: string | null;
+          duration_seconds: number;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          caller_id: string;
+          callee_id: string;
+          call_type?: CallType;
+          status?: CallStatus;
+          started_at?: string;
+          answered_at?: string | null;
+          ended_at?: string | null;
+          duration_seconds?: number;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          caller_id?: string;
+          callee_id?: string;
+          call_type?: CallType;
+          status?: CallStatus;
+          started_at?: string;
+          answered_at?: string | null;
+          ended_at?: string | null;
+          duration_seconds?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calls_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "calls_caller_id_fkey";
+            columns: ["caller_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "calls_callee_id_fkey";
+            columns: ["callee_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      call_signals: {
+        Row: {
+          id: string;
+          call_id: string;
+          sender_id: string;
+          recipient_id: string;
+          signal_type: CallSignalType;
+          payload: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          call_id: string;
+          sender_id: string;
+          recipient_id: string;
+          signal_type: CallSignalType;
+          payload: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          call_id?: string;
+          sender_id?: string;
+          recipient_id?: string;
+          signal_type?: CallSignalType;
+          payload?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "call_signals_call_id_fkey";
+            columns: ["call_id"];
+            isOneToOne: false;
+            referencedRelation: "calls";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "call_signals_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "call_signals_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -346,6 +469,9 @@ export interface Database {
     Enums: {
       conversation_type: ConversationType;
       friend_request_status: FriendRequestStatus;
+      call_type: CallType;
+      call_status: CallStatus;
+      call_signal_type: CallSignalType;
     };
     CompositeTypes: Record<string, never>;
   };
@@ -357,3 +483,5 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type FriendRequest = Database["public"]["Tables"]["friend_requests"]["Row"];
 export type BlockedUser = Database["public"]["Tables"]["blocked_users"]["Row"];
 export type MessageReaction = Database["public"]["Tables"]["message_reactions"]["Row"];
+export type Call = Database["public"]["Tables"]["calls"]["Row"];
+export type CallSignal = Database["public"]["Tables"]["call_signals"]["Row"];

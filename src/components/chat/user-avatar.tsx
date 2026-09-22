@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface UserAvatarProps {
   name: string;
   avatarUrl?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   isOnline?: boolean;
 }
@@ -14,18 +14,21 @@ const sizeMap = {
   sm: "size-9 text-sm",
   md: "size-11 text-base",
   lg: "size-16 text-xl",
+  xl: "size-28 text-4xl",
 };
 
 const imageSizeMap = {
   sm: 36,
   md: 44,
   lg: 64,
+  xl: 112,
 };
 
 const dotSizeMap = {
   sm: "size-2.5",
   md: "size-3",
   lg: "size-4",
+  xl: "size-5",
 };
 
 export function UserAvatar({ name, avatarUrl, size = "md", className, isOnline = false }: UserAvatarProps) {

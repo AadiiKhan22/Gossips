@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquarePlus, UserPlus, Users } from "lucide-react";
+import { MessageSquarePlus, Phone, UserPlus, Users } from "lucide-react";
 import * as React from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,6 +12,7 @@ interface ChatActionsProps {
   onNewChat?: () => void;
   onNewGroup?: () => void;
   onFriendRequests?: () => void;
+  onCalls?: () => void;
   pendingRequestCount?: number;
 }
 
@@ -20,6 +21,7 @@ export function ChatActions({
   onNewChat,
   onNewGroup,
   onFriendRequests,
+  onCalls,
   pendingRequestCount = 0,
 }: ChatActionsProps) {
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -62,6 +64,11 @@ export function ChatActions({
             {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
           </span>
         ) : null}
+      </Button>
+
+      <Button type="button" variant="outline" className="w-full gap-2" onClick={onCalls}>
+        <Phone className="size-4" />
+        Calls
       </Button>
     </div>
   );

@@ -17,6 +17,7 @@ interface ChatListProps {
   onSelectChat?: (chatId: string) => void;
   onManageChat?: (chatId: string, action: ChatManageAction) => void;
   className?: string;
+  emptyMessage?: string;
 }
 
 function filterChats(chats: ChatListItem[], query: string) {
@@ -39,6 +40,7 @@ export function ChatList({
   onSelectChat,
   onManageChat,
   className,
+  emptyMessage,
 }: ChatListProps) {
   const filteredChats = React.useMemo(
     () => filterChats(chats, searchQuery),
@@ -50,6 +52,13 @@ export function ChatList({
   }
 
   if (chats.length === 0) {
+    if (emptyMessage) {
+      return (
+        <p className={cn("text-muted-foreground px-4 py-10 text-center text-sm", className)}>
+          {emptyMessage}
+        </p>
+      );
+    }
     return <ChatEmptyState compact className={className} />;
   }
 

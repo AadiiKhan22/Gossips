@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, LogOut, Settings, UserRound } from "lucide-react";
+import { ChevronUp, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -91,12 +91,6 @@ export function ProfileMenu({ user, className }: ProfileMenuProps) {
               <Link href="/profile" onClick={() => setOpen(false)}>
                 <UserRound className="size-4" />
                 Profile
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2" asChild role="menuitem">
-              <Link href="/settings" onClick={() => setOpen(false)}>
-                <Settings className="size-4" />
-                Settings
               </Link>
             </Button>
             <Button

@@ -53,6 +53,34 @@ export function showMessageNotification(options: {
   }
 }
 
+export function showIncomingCallNotification(options: {
+  callerName: string;
+  callType: "audio" | "video";
+  avatarUrl?: string | null;
+  onClick?: () => void;
+}): void {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  // Don't interrupt someone who's actively looking at the tab — the
+  // full-screen ring overlay already covers that case.
+  if (document.visibilityState === "visible" && document.hasFocus()) return;
+
+  const notification = new Notification(`${options.callerName} is calling...`, {
+    body: options.callType === "video" ? "Incoming video call" : "Incoming voice call",
+    icon: options.avatarUrl ?? "/favicon.ico",
+    tag: "gossips-call",
+    requireInteraction: true,
+  });
+
+  if (options.onClick) {
+    notification.onclick = () => {
+      window.focus();
+      options.onClick?.();
+      notification.close();
+    };
+  }
+}
+
 export function updateTitleWithUnreadCount(totalUnread: number, baseTitle = "Gossips"): void {
   if (typeof document === "undefined") return;
   document.title = totalUnread > 0 ? `(${totalUnread}) ${baseTitle}` : baseTitle;

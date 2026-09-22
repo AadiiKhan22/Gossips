@@ -24,7 +24,12 @@ export const metadata: Metadata = {
   applicationName: "Gossips",
   keywords: ["messaging", "chat", "realtime", "gossips"],
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/favicon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico?v=2",
+    apple: "/apple-touch-icon.png?v=2",
   },
 };
 

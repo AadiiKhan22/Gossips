@@ -1,5 +1,6 @@
-import { MessageCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
+import { GossipsLogo } from "@/components/brand/gossips-logo";
 import { cn } from "@/lib/utils";
 
 interface ChatEmptyStateProps {
@@ -16,16 +17,14 @@ export function ChatEmptyState({ className, compact = false }: ChatEmptyStatePro
         className,
       )}
     >
-      <div className="bg-gossip/10 text-gossip mb-4 flex size-16 items-center justify-center rounded-2xl">
-        <MessageCircle className="size-8" strokeWidth={1.75} />
-      </div>
+      <GossipsLogo size={compact ? "lg" : "xl"} showText={false} className="mb-4" />
       <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
         {compact ? "No chats yet" : "Welcome to Gossips"}
       </h2>
       <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
         {compact
-          ? "Start a new chat or create a group when messaging arrives in Phase 4."
-          : "Select a conversation from the sidebar or start a new chat. Messaging connects in Phase 4."}
+          ? "Start a new chat or create a group."
+          : "More Chats · More Moments"}
       </p>
     </div>
   );
