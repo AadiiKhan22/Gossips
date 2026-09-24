@@ -301,7 +301,7 @@ export function MessageBubble({
                   <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
                   {isOwn ? (
                     isSeen ? (
-                      <CheckCheck className="size-3.5" aria-label="Seen" />
+                      <CheckCheck className="size-3.5 text-[#16A34A]" aria-label="Seen" />
                     ) : (
                       <Check className="size-3.5" aria-label="Sent" />
                     )
@@ -320,7 +320,7 @@ export function MessageBubble({
                   <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
                   {isOwn ? (
                     isSeen ? (
-                      <CheckCheck className="size-3.5" aria-label="Seen" />
+                      <CheckCheck className="size-3.5 text-[#16A34A]" aria-label="Seen" />
                     ) : (
                       <Check className="size-3.5" aria-label="Sent" />
                     )
@@ -471,7 +471,7 @@ export function MessageBubble({
               <time dateTime={message.created_at}>{formatMessageTime(message.created_at)}</time>
               {isOwn ? (
                 isSeen ? (
-                  <CheckCheck className="size-3.5" aria-label="Seen" />
+                  <CheckCheck className="size-3.5 text-[#16A34A]" aria-label="Seen" />
                 ) : (
                   <Check className="size-3.5" aria-label="Sent" />
                 )

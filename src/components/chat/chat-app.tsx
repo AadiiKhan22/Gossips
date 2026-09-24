@@ -303,13 +303,23 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
 
     let cancelled = false;
 
+    const refreshReadAt = () => {
+      void fetchOtherMemberReadAt(activeChatId, user.id).then((readAt) => {
+        if (!cancelled) setOtherReadAt(readAt);
+      });
+    };
+
     void markConversationRead(activeChatId, user.id).catch(() => {});
-    void fetchOtherMemberReadAt(activeChatId, user.id).then((readAt) => {
-      if (!cancelled) setOtherReadAt(readAt);
-    });
+    refreshReadAt();
+
+    // Realtime can miss events on mobile browsers (e.g. when the tab is
+    // backgrounded), so also poll every few seconds as a safety net for
+    // the "seen" double-tick.
+    const intervalId = setInterval(refreshReadAt, 4000);
 
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, [activeChatId, activeChat?.isGroup, user.id]);
 
@@ -513,14 +523,23 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
     } catch (sendError) {
       const rawMessage = sendError instanceof Error ? sendError.message : "";
       if (rawMessage.toLowerCase().includes("row-level security")) {
-        // Blocked either way; re-sync block state so the banner/composer
-        // reflect it, then surface a friendly error instead of the raw one.
+        // A generic RLS failure could mean a real block, or something
+        // else (a stale/desynced conversation state, for example). Check
+        // the actual block status before claiming it's a block, so the
+        // person doesn't see a false "you've been blocked" message.
         const otherUserId = activeChat?.otherUserId;
         if (otherUserId) {
-          void isUserBlocked(user.id, otherUserId).then(setIsOtherBlocked);
-          void isBlockedByUser(otherUserId).then(setIsBlockedByOther);
+          const [blockedThem, blockedByThem] = await Promise.all([
+            isUserBlocked(user.id, otherUserId),
+            isBlockedByUser(otherUserId),
+          ]);
+          setIsOtherBlocked(blockedThem);
+          setIsBlockedByOther(blockedByThem);
+          if (blockedThem || blockedByThem) {
+            throw new Error("This message couldn't be delivered because of a block between you two.");
+          }
         }
-        throw new Error("This message couldn't be delivered because of a block between you two.");
+        throw new Error("This message couldn't be sent. Please try again.");
       }
       throw sendError;
     }

@@ -172,26 +172,38 @@ export async function sendMessage(
     throw new Error("Message cannot be empty.");
   }
 
-  const { data, error } = await supabase
-    .from("messages")
-    .insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      content: trimmed,
-      attachment_url: attachment?.url ?? null,
-      attachment_type: attachment?.type ?? null,
-      attachment_name: attachment?.name ?? null,
-      attachment_duration_seconds: attachment?.durationSeconds ?? null,
-      reply_to_message_id: replyToMessageId ?? null,
-    })
-    .select("*")
-    .single();
+  const insertPayload = {
+    conversation_id: conversationId,
+    sender_id: senderId,
+    content: trimmed,
+    attachment_url: attachment?.url ?? null,
+    attachment_type: attachment?.type ?? null,
+    attachment_name: attachment?.name ?? null,
+    attachment_duration_seconds: attachment?.durationSeconds ?? null,
+    reply_to_message_id: replyToMessageId ?? null,
+  };
 
-  if (error || !data) {
-    throw new Error(error?.message ?? "Failed to send message.");
+  const { data, error } = await supabase.from("messages").insert(insertPayload).select("*").single();
+
+  if (!error && data) {
+    return data;
   }
 
-  return data;
+  // A stale/near-expiry auth token can make a single request fail its
+  // row-level security check even though the user is legitimately a
+  // member of the conversation. Refresh the session once and retry
+  // before surfacing an error, since this resolves itself silently most
+  // of the time.
+  if (error?.code === "42501" || error?.message?.toLowerCase().includes("row-level security")) {
+    await supabase.auth.refreshSession();
+    const retry = await supabase.from("messages").insert(insertPayload).select("*").single();
+    if (!retry.error && retry.data) {
+      return retry.data;
+    }
+    throw new Error(retry.error?.message ?? "Failed to send message.");
+  }
+
+  throw new Error(error?.message ?? "Failed to send message.");
 }
 
 function normalizeProfile(

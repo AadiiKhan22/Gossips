@@ -2,7 +2,7 @@ import { compressImage } from "@/lib/media/compress-image";
 import { createClient } from "@/lib/supabase/client";
 import { generateId } from "@/lib/utils/generate-id";
 
-const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // 25MB
+const MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024; // 50MB (Supabase free-tier max upload size)
 
 export interface ChatAttachment {
   url: string;
@@ -17,7 +17,7 @@ export async function uploadChatMedia(
   durationSeconds?: number,
 ): Promise<ChatAttachment> {
   if (file.size > MAX_ATTACHMENT_BYTES) {
-    throw new Error("File must be 25MB or smaller.");
+    throw new Error("File must be 50MB or smaller.");
   }
 
   const supabase = createClient();

@@ -23,7 +23,7 @@ export function validateUsername(username: string): string | undefined {
 export function validateDisplayName(displayName: string): string | undefined {
   const trimmed = displayName.trim();
   if (!trimmed) return "Display name is required.";
-  if (trimmed.length > 80) return "Display name must be 80 characters or fewer.";
+  if (trimmed.length > 20) return "Display name must be 20 characters or fewer (including spaces).";
   return undefined;
 }
 

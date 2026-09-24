@@ -40,28 +40,7 @@ export function SplashScreen({ redirectTo, delayMs = 1500 }: SplashScreenProps) 
         <path d="M0 250 C100 210 200 250 290 240 C340 235 375 220 400 210 L400 300 L0 300 Z" fill="#0b1f4a" opacity="0.9" />
       </svg>
 
-      {/* Logo: red app icon in light mode, blue chat bubbles in dark mode */}
-      <div className="relative z-10 dark:hidden">
-        <GossipsLogo size="xl" showText={false} className="drop-shadow-lg" />
-      </div>
-      <svg
-        aria-hidden
-        viewBox="0 0 120 100"
-        className="relative z-10 hidden h-24 w-28 drop-shadow-[0_0_24px_rgba(59,130,246,0.45)] dark:block"
-      >
-        <defs>
-          <linearGradient id="bubbleA" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#4aa3ff" />
-            <stop offset="1" stopColor="#1d6fe0" />
-          </linearGradient>
-          <linearGradient id="bubbleB" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#2b7de9" />
-            <stop offset="1" stopColor="#0f4bb8" />
-          </linearGradient>
-        </defs>
-        <path d="M12 18 Q12 4 30 4 H60 Q78 4 78 22 V40 Q78 58 60 58 H38 L22 70 V58 Q12 56 12 42 Z" fill="url(#bubbleA)" />
-        <path d="M48 36 Q48 24 64 24 H92 Q108 24 108 40 V56 Q108 72 94 74 V88 L78 76 H64 Q48 76 48 60 Z" fill="url(#bubbleB)" opacity="0.95" />
-      </svg>
+      <GossipsLogo size="xl" showText={false} className="relative z-10 drop-shadow-lg" />
 
       <div className="relative z-10 flex flex-col items-center gap-1.5">
         <h1 className="text-4xl font-bold tracking-tight dark:text-[#3b8cf0]">Gossips</h1>

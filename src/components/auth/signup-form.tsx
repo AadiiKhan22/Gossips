@@ -67,6 +67,15 @@ export function SignupForm() {
         return;
       }
 
+      // Supabase returns a success response with no error even when the
+      // email is already registered, to avoid leaking which emails exist.
+      // When that happens for an existing (confirmed or unconfirmed) user,
+      // the returned user has no identities attached.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setFormError("Account is already created.");
+        return;
+      }
+
       setSuccessMessage(
         "Account created. Check your email to confirm your address, then sign in.",
       );

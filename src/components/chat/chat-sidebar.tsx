@@ -83,6 +83,20 @@ export function ChatSidebar({
           <GossipsLogo size="sm" />
 
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onFriendRequests}
+              aria-label="Friend requests"
+              className="text-gossip hover:bg-sidebar-accent relative flex size-9 items-center justify-center rounded-full transition-colors"
+            >
+              <UserPlus className="size-5" />
+              {pendingRequestCount > 0 ? (
+                <span className="bg-gossip text-gossip-foreground absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
+                  {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                </span>
+              ) : null}
+            </button>
+
             {activeTab === "chats" ? (
               <button
                 type="button"
@@ -133,23 +147,6 @@ export function ChatSidebar({
                 >
                   <Users className="size-4" />
                   New group
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="relative w-full justify-start gap-2 rounded-none"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onFriendRequests?.();
-                  }}
-                >
-                  <UserPlus className="size-4" />
-                  Friend requests
-                  {pendingRequestCount > 0 ? (
-                    <span className="bg-gossip text-gossip-foreground ml-auto flex size-5 items-center justify-center rounded-full text-[11px] font-semibold">
-                      {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
-                    </span>
-                  ) : null}
                 </Button>
               </div>
             ) : null}
