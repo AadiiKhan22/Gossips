@@ -76,6 +76,13 @@ export async function fetchConversationsClient(userId: string): Promise<ChatList
       avatarUrl: isGroup ? undefined : otherProfile?.avatar_url,
       isGroup,
       memberCount: isGroup ? conversationMembers.length : undefined,
+      memberNames: isGroup
+        ? conversationMembers
+            .filter((member) => member.user_id !== userId)
+            .map((member) => normalizeProfile(member.profiles))
+            .filter((profile): profile is NonNullable<typeof profile> => Boolean(profile))
+            .map((profile) => getDisplayName(profile))
+        : undefined,
       isPinned: Boolean(myState?.pinned_at),
       isMuted: Boolean(myState?.muted),
       _pinnedAt: myState?.pinned_at ?? null,
@@ -138,11 +145,16 @@ export async function fetchMessages(conversationId: string): Promise<Message[]> 
   return data;
 }
 
+export interface ConversationMemberInfo {
+  name: string;
+  avatarUrl: string | null;
+}
+
 export async function fetchConversationMemberNames(
   conversationId: string,
-): Promise<Map<string, string>> {
+): Promise<Map<string, ConversationMemberInfo>> {
   const supabase = createClient();
-  const map = new Map<string, string>();
+  const map = new Map<string, ConversationMemberInfo>();
 
   const { data, error } = await supabase
     .from("conversation_members")
@@ -153,7 +165,9 @@ export async function fetchConversationMemberNames(
 
   for (const row of data as MemberWithProfile[]) {
     const profile = normalizeProfile(row.profiles);
-    if (profile) map.set(row.user_id, getDisplayName(profile));
+    if (profile) {
+      map.set(row.user_id, { name: getDisplayName(profile), avatarUrl: profile.avatar_url ?? null });
+    }
   }
 
   return map;

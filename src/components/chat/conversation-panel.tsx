@@ -6,6 +6,7 @@ import * as React from "react";
 import { useCallContext } from "@/components/calls/call-provider";
 import { MessageComposer } from "@/components/chat/message-composer";
 import { MessageList } from "@/components/chat/message-list";
+import type { ConversationMemberInfo } from "@/lib/chat/client";
 import { UserAvatar } from "@/components/chat/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ interface ConversationPanelProps {
   currentUserAvatarUrl?: string | null;
   currentUserName?: string;
   otherReadAt?: string | null;
-  senderNamesById?: Map<string, string>;
+  senderInfoById?: Map<string, ConversationMemberInfo>;
   reactionsByMessageId?: Map<string, ReactionSummary[]>;
   replyingTo?: Message | null;
   onCancelReply?: () => void;
@@ -52,7 +53,7 @@ export function ConversationPanel({
   currentUserAvatarUrl,
   currentUserName,
   otherReadAt = null,
-  senderNamesById,
+  senderInfoById,
   reactionsByMessageId,
   replyingTo = null,
   onCancelReply,
@@ -222,7 +223,9 @@ export function ConversationPanel({
               <h2 className="truncate font-semibold">{conversation.name}</h2>
               <p className="text-muted-foreground text-xs">
                 {conversation.isGroup
-                  ? `${conversation.memberCount ?? 0} members`
+                  ? (conversation.memberNames && conversation.memberNames.length > 0
+                      ? conversation.memberNames.join(", ")
+                      : `${conversation.memberCount ?? 0} members`)
                   : isOtherOnline
                     ? "Online"
                     : "Private chat"}
@@ -328,7 +331,7 @@ export function ConversationPanel({
         isLoading={messagesLoading}
         otherReadAt={otherReadAt}
         isGroup={conversation.isGroup}
-        senderNamesById={senderNamesById}
+        senderInfoById={senderInfoById}
         reactionsByMessageId={reactionsByMessageId}
         scrollToMessageId={activeMatchId}
         onReply={onReply}

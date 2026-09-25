@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { MessageBubble } from "@/components/chat/message-bubble";
+import type { ConversationMemberInfo } from "@/lib/chat/client";
 import type { ReactionSummary } from "@/lib/chat/reactions";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/types/database";
@@ -18,7 +19,7 @@ interface MessageListProps {
   /** Other member's last_read_at ISO string, or null if they haven't read yet. */
   otherReadAt?: string | null;
   isGroup?: boolean;
-  senderNamesById?: Map<string, string>;
+  senderInfoById?: Map<string, ConversationMemberInfo>;
   reactionsByMessageId?: Map<string, ReactionSummary[]>;
   /** Message id to scroll to and briefly highlight, e.g. an active search match. */
   scrollToMessageId?: string | null;
@@ -39,7 +40,7 @@ export function MessageList({
   isLoading = false,
   otherReadAt = null,
   isGroup = false,
-  senderNamesById,
+  senderInfoById,
   reactionsByMessageId,
   scrollToMessageId = null,
   onReply,
@@ -115,8 +116,12 @@ export function MessageList({
               isOwn={isOwn}
               isSeen={isSeen}
               isGroup={isGroup}
-              senderName={senderNamesById?.get(message.sender_id) ?? (isOwn ? currentUserName : otherName)}
-              avatarUrl={isOwn ? currentUserAvatarUrl : otherAvatarUrl}
+              senderName={senderInfoById?.get(message.sender_id)?.name ?? (isOwn ? currentUserName : otherName)}
+              avatarUrl={
+                isOwn
+                  ? currentUserAvatarUrl
+                  : (senderInfoById?.get(message.sender_id)?.avatarUrl ?? otherAvatarUrl)
+              }
               replyToMessage={replyToMessage}
               reactions={reactionsByMessageId?.get(message.id) ?? []}
               onReply={onReply}

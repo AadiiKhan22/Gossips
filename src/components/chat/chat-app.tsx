@@ -13,6 +13,7 @@ import { NewChatDialog } from "@/components/chat/new-chat-dialog";
 import { NewGroupDialog } from "@/components/chat/new-group-dialog";
 import { formatChatListTime } from "@/lib/chat/format";
 import {
+  type ConversationMemberInfo,
   fetchConversationMemberNames,
   fetchConversationsClient,
   fetchMessages,
@@ -70,7 +71,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
   const [otherReadAt, setOtherReadAt] = React.useState<string | null>(null);
   const [isOtherBlocked, setIsOtherBlocked] = React.useState(false);
   const [isBlockedByOther, setIsBlockedByOther] = React.useState(false);
-  const [senderNamesById, setSenderNamesById] = React.useState<Map<string, string>>(new Map());
+  const [senderInfoById, setSenderInfoById] = React.useState<Map<string, ConversationMemberInfo>>(new Map());
   const { height: viewportHeight, offsetTop: viewportOffsetTop } = useVisualViewport();
 
   // Lock the page itself to the viewport while the chat screen is
@@ -222,13 +223,13 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
   // Group sender names, for the "sender name above bubble" label.
   React.useEffect(() => {
     if (!activeChatId || !activeChat?.isGroup) {
-      setSenderNamesById(new Map());
+      setSenderInfoById(new Map());
       return;
     }
 
     let cancelled = false;
     void fetchConversationMemberNames(activeChatId).then((names) => {
-      if (!cancelled) setSenderNamesById(names);
+      if (!cancelled) setSenderInfoById(names);
     });
 
     return () => {
@@ -390,10 +391,10 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
     activeChatRef.current = activeChat;
   }, [activeChat]);
 
-  const senderNamesByIdRef = React.useRef(senderNamesById);
+  const senderNamesByIdRef = React.useRef(senderInfoById);
   React.useEffect(() => {
-    senderNamesByIdRef.current = senderNamesById;
-  }, [senderNamesById]);
+    senderNamesByIdRef.current = senderInfoById;
+  }, [senderInfoById]);
 
   React.useEffect(() => {
     if (!activeChatId) return;
@@ -421,7 +422,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
           if (newMessage.sender_id !== user.id) {
             void markConversationRead(activeChatId, user.id).catch(() => {});
             const senderName = activeChatRef.current?.isGroup
-              ? (senderNamesByIdRef.current.get(newMessage.sender_id) ?? "Someone")
+              ? (senderNamesByIdRef.current.get(newMessage.sender_id)?.name ?? "Someone")
               : (activeChatRef.current?.name ?? "Someone");
             const preview = newMessage.content || "sent an attachment";
             setLiveAnnouncement(`New message from ${senderName}: ${preview}`);
@@ -696,7 +697,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
             currentUserAvatarUrl={user.avatarUrl}
             currentUserName={user.displayName}
             otherReadAt={otherReadAt}
-            senderNamesById={senderNamesById}
+            senderInfoById={senderInfoById}
             reactionsByMessageId={reactionsByMessageId}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}

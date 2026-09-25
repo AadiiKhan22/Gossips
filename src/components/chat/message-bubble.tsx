@@ -1,6 +1,7 @@
 "use client";
 
 import { ImageLightbox } from "@/components/chat/image-lightbox";
+import { UserAvatar } from "@/components/chat/user-avatar";
 import { VoiceMessageBubble } from "@/components/chat/voice-message-bubble";
 import {
   Check,
@@ -152,9 +153,14 @@ export function MessageBubble({
     );
   }
 
+  const showGroupAvatar = isGroup && !isOwn && Boolean(senderName) && !isAudioAttachment;
+
   return (
     <>
-      <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+      <div className={cn("flex items-end gap-2", isOwn ? "justify-end" : "justify-start")}>
+      {showGroupAvatar ? (
+        <UserAvatar name={senderName ?? "?"} avatarUrl={avatarUrl} size="xs" className="mb-0.5 shrink-0" />
+      ) : null}
       <div ref={containerRef} className="group relative max-w-[85%] sm:max-w-[70%]">
         {showEmojiPicker ? (
           <div

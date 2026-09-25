@@ -8,6 +8,7 @@ export type ChatListItem = {
   avatarUrl?: string | null;
   isGroup?: boolean;
   memberCount?: number;
+  memberNames?: string[];
   isPinned?: boolean;
   isMuted?: boolean;
 };

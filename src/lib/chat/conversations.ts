@@ -99,6 +99,13 @@ export async function getConversationsForUser(userId: string): Promise<ChatListI
       avatarUrl: isGroup ? undefined : otherProfile?.avatar_url,
       isGroup,
       memberCount: isGroup ? conversationMembers.length : undefined,
+      memberNames: isGroup
+        ? conversationMembers
+            .filter((member) => member.user_id !== userId)
+            .map((member) => normalizeProfile(member.profiles))
+            .filter((profile): profile is NonNullable<typeof profile> => Boolean(profile))
+            .map((profile) => getDisplayName(profile))
+        : undefined,
       isPinned: Boolean(myState?.pinned_at),
       isMuted: Boolean(myState?.muted),
       _pinnedAt: myState?.pinned_at ?? null,
@@ -207,6 +214,13 @@ function mapConversationsWithoutMessages(
       avatarUrl: isGroup ? undefined : otherProfile?.avatar_url,
       isGroup,
       memberCount: isGroup ? conversationMembers.length : undefined,
+      memberNames: isGroup
+        ? conversationMembers
+            .filter((member) => member.user_id !== userId)
+            .map((member) => normalizeProfile(member.profiles))
+            .filter((profile): profile is NonNullable<typeof profile> => Boolean(profile))
+            .map((profile) => getDisplayName(profile))
+        : undefined,
       isPinned: Boolean(myState?.pinned_at),
       isMuted: Boolean(myState?.muted),
       _pinnedAt: myState?.pinned_at ?? null,
