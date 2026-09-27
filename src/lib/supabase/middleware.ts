@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "@/lib/utils";
 
 const AUTH_ROUTES = ["/login", "/signup"];
-const PUBLIC_PREFIXES = ["/auth/callback"];
+const PUBLIC_PREFIXES = ["/auth/callback", "/auth/confirm", "/auth/reset-password"];
 const PROTECTED_ROUTES = ["/", "/profile"];
 
 function isAuthRoute(pathname: string) {

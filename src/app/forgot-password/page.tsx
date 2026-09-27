@@ -16,6 +16,22 @@ export default function ForgotPasswordPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [sent, setSent] = React.useState(false);
 
+  // iOS Safari can reuse a background tab and restore it from the
+  // back-forward cache (bfcache) instead of doing a fresh navigation. If
+  // someone left this tab open after an earlier attempt (e.g. mid rate
+  // limit), a "resume" like that would otherwise show the old error/sent
+  // state again, which looks like the link failed to open anything new.
+  React.useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        setError(null);
+        setSent(false);
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);

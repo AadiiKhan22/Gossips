@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 import { validatePassword } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/client";
 
-// The reset-password link points straight here with ?token_hash=&type=recovery
-// (instead of going through a server route first). We only call verifyOtp once
-// this client component actually mounts and runs in a real browser, so an
-// automated link-scanner (e.g. Gmail's safe-link prefetcher, which only does
-// a plain GET and doesn't execute JavaScript) can't burn the one-time token
-// before the person taps the link themselves.
+// The email link points at /auth/confirm first (a server route), which does
+// the one-time-token verification with verifyOtp and establishes a real
+// session via cookies, then redirects here with a clean URL (no token_hash/
+// type — those were already consumed server-side and can't be reused).
+// So by the time this page mounts, the person should already be logged in.
+// We just need to confirm a session exists, not verify anything ourselves.
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,18 +29,27 @@ export default function ResetPasswordPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    const supabase = createClient();
+
+    // Legacy/fallback path: if a link ever points straight at this page with
+    // token_hash + type still on it (e.g. an old email already sent, or a
+    // future email template change), verify it here instead of just
+    // checking for a session.
     const tokenHash = searchParams.get("token_hash");
     const type = searchParams.get("type");
 
-    if (!tokenHash || !type) {
-      setStatus("invalid");
+    if (tokenHash && type) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any }).then(({ error: verifyError }) => {
+        setStatus(verifyError ? "invalid" : "ready");
+      });
       return;
     }
 
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any }).then(({ error: verifyError }) => {
-      setStatus(verifyError ? "invalid" : "ready");
+    // Normal path: /auth/confirm already verified the token server-side and
+    // set the session cookie. Just check that the session is really there.
+    supabase.auth.getUser().then(({ data, error: userError }) => {
+      setStatus(!userError && data.user ? "ready" : "invalid");
     });
   }, [searchParams]);
 
