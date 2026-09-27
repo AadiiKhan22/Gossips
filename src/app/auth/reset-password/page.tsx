@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { Suspense } from "react";
 import * as React from "react";
 
 import { GossipsLogo } from "@/components/brand/gossips-logo";
@@ -19,6 +20,20 @@ import { createClient } from "@/lib/supabase/client";
 // So by the time this page mounts, the person should already be logged in.
 // We just need to confirm a session exists, not verify anything ourselves.
 export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh flex-col items-center justify-center bg-background px-6 py-10 dark:bg-[linear-gradient(180deg,#050b18_0%,#0a1430_100%)]">
+          <p className="text-muted-foreground text-center text-sm dark:text-[#8a97b4]">Loading...</p>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
