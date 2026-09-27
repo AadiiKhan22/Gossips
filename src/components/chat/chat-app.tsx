@@ -153,6 +153,13 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
     void fetchIncomingFriendRequestCount(user.id).then(setPendingRequestCount);
   }, [user.id]);
 
+  // Also refresh the chat list, so a newly-accepted friend's chat shows up
+  // in the sidebar right away instead of only after the first message.
+  const handleFriendRequestsChanged = React.useCallback(() => {
+    refreshPendingRequestCount();
+    void fetchConversationsClient(user.id).then(setChats);
+  }, [refreshPendingRequestCount, user.id]);
+
   React.useEffect(() => {
     refreshPendingRequestCount();
   }, [refreshPendingRequestCount]);
@@ -740,7 +747,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
         open={friendRequestsOpen}
         onOpenChange={setFriendRequestsOpen}
         currentUserId={user.id}
-        onRequestsChanged={refreshPendingRequestCount}
+        onRequestsChanged={handleFriendRequestsChanged}
       />
 
       <ForwardDialog

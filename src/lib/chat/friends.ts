@@ -1,3 +1,4 @@
+import { startDirectConversation } from "@/lib/chat/client";
 import { getDisplayName } from "@/lib/chat/format";
 import { createClient } from "@/lib/supabase/client";
 import type { FriendStatus, FriendSummary, IncomingFriendRequest, UserSearchResult } from "@/types/chat-ui";
@@ -6,33 +7,27 @@ import type { FriendRequest, Profile } from "@/types/database";
 type ProfilePreview = Pick<Profile, "id" | "username" | "display_name" | "avatar_url">;
 
 /**
- * Search users by their unique username (case-insensitive) and annotate
- * each result with the current friend status between the searching user
- * and that result. Deliberately does NOT match on display_name: display
- * names aren't unique, so searching by them can't reliably identify a
- * single person — that's the whole reason usernames exist.
+ * Search users by username/display name and annotate each result with the
+ * current friend status between the searching user and that result.
  */
 export async function searchUsersWithFriendStatus(
   query: string,
   currentUserId: string,
 ): Promise<UserSearchResult[]> {
   const supabase = createClient();
-  // Usernames don't include "@" — strip a leading one so "@fahad456" and
-  // "fahad456" both work, since people will naturally type either.
-  const trimmed = query.trim().replace(/^@/, "");
+  const trimmed = query.trim();
   if (trimmed.length < 2) return [];
 
-  // Escape ilike wildcard characters (`%`, `_`) so user input can't widen
-  // the match pattern in unexpected ways.
-  const safePattern = `${escapeForIlike(trimmed)}%`;
+  // Escape PostgREST filter syntax special characters (`,`, `(`, `)`, `%`,
+  // `_`) so user input can't break out of the ilike pattern or the `.or()`
+  // filter list and inject extra conditions.
+  const safePattern = `%${escapeForIlike(trimmed)}%`;
 
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url")
     .neq("id", currentUserId)
-    .not("username", "is", null)
-    .ilike("username", safePattern)
-    .order("username", { ascending: true })
+    .or(`username.ilike.${safePattern},display_name.ilike.${safePattern}`)
     .limit(10);
 
   if (error || !profiles?.length) return [];
@@ -92,10 +87,6 @@ export async function sendFriendRequest(
   currentUserId: string,
   otherUserId: string,
 ): Promise<void> {
-  if (currentUserId === otherUserId) {
-    throw new Error("You can't send a friend request to yourself.");
-  }
-
   const supabase = createClient();
 
   // Guard against duplicate rows: don't insert a new request if any
@@ -137,13 +128,21 @@ export async function respondToFriendRequest(
   accept: boolean,
 ): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("friend_requests")
     .update({ status: accept ? "accepted" : "rejected" })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .select("sender_id")
+    .single();
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // Accepting should make the chat show up immediately, without waiting
+  // for either side to send the first message.
+  if (accept && data?.sender_id) {
+    await startDirectConversation(data.sender_id).catch(() => {});
   }
 }
 
