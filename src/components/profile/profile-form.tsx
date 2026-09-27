@@ -12,10 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage/avatars";
+import { checkUsernameAvailability, type UsernameAvailability } from "@/lib/chat/username";
 import {
   hasProfileFieldErrors,
   normalizeUsername,
   validateProfileForm,
+  validateUsername,
   type ProfileFieldErrors,
 } from "@/lib/validations/profile";
 import type { Profile } from "@/lib/auth/get-user";
@@ -37,7 +39,35 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+  const [usernameStatus, setUsernameStatus] = React.useState<UsernameAvailability | "checking">(
+    "unknown",
+  );
   const avatarFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Live "is this username taken?" check as the person types, so they find
+  // out before submitting instead of only after a duplicate-key error.
+  React.useEffect(() => {
+    const originalUsername = normalizeUsername(profile.username ?? "");
+    const candidate = normalizeUsername(username);
+
+    if (!candidate || validateUsername(username)) {
+      setUsernameStatus("unknown");
+      return;
+    }
+    if (candidate === originalUsername) {
+      // Unchanged from what's already saved — no need to check.
+      setUsernameStatus("unknown");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const timer = window.setTimeout(async () => {
+      const result = await checkUsernameAvailability(candidate, profile.id);
+      setUsernameStatus(result);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [username, profile.username, profile.id]);
 
   async function handleAvatarFilePick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -72,6 +102,9 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
     setSuccessMessage(null);
 
     const errors = validateProfileForm(username, displayName, avatarUrl, bio);
+    if (usernameStatus === "taken") {
+      errors.username = "That username is already taken. Try another one.";
+    }
     setFieldErrors(errors);
     if (hasProfileFieldErrors(errors)) return;
 
@@ -214,8 +247,17 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
           />
           {fieldErrors.username ? (
             <p className="text-destructive text-sm">{fieldErrors.username}</p>
+          ) : usernameStatus === "checking" ? (
+            <p className="text-muted-foreground text-xs">Checking availability...</p>
+          ) : usernameStatus === "taken" ? (
+            <p className="text-destructive text-sm">That username is already taken.</p>
+          ) : usernameStatus === "available" ? (
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">Username is available.</p>
           ) : (
-            <p className="text-muted-foreground text-xs">Lowercase letters, numbers, and underscores only.</p>
+            <p className="text-muted-foreground text-xs">
+              Lowercase letters, numbers, and underscores only. This is how friends will find and
+              add you — it&apos;s unique to you.
+            </p>
           )}
         </div>
 
@@ -258,7 +300,11 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
         </div>
       </div>
 
-      <Button type="submit" variant="gossip" disabled={isLoading}>
+      <Button
+        type="submit"
+        variant="gossip"
+        disabled={isLoading || usernameStatus === "checking" || usernameStatus === "taken"}
+      >
         {isLoading ? "Saving..." : "Save profile"}
       </Button>
     </form>

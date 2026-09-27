@@ -134,16 +134,16 @@ export function NewChatDialog({
             </Button>
           </div>
           <p className="text-muted-foreground mt-1 text-sm">
-            Search by username or display name. You can message someone once they accept your
-            friend request.
+            Every person has a unique username — search for it to find exactly who you mean. You
+            can message someone once they accept your friend request.
           </p>
           <Input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search users..."
+            placeholder="Search by username"
             className="mt-3"
-            aria-label="Search users"
+            aria-label="Search by username"
           />
         </div>
 
@@ -161,7 +161,9 @@ export function NewChatDialog({
           ) : null}
 
           {!isSearching && query.trim().length >= 2 && results.length === 0 ? (
-            <p className="text-muted-foreground px-2 py-6 text-center text-sm">No users found.</p>
+            <p className="text-muted-foreground px-2 py-6 text-center text-sm">
+              No one found with that username.
+            </p>
           ) : null}
 
           <ul className="space-y-1">

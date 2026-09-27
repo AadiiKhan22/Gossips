@@ -6,27 +6,33 @@ import type { FriendRequest, Profile } from "@/types/database";
 type ProfilePreview = Pick<Profile, "id" | "username" | "display_name" | "avatar_url">;
 
 /**
- * Search users by username/display name and annotate each result with the
- * current friend status between the searching user and that result.
+ * Search users by their unique username (case-insensitive) and annotate
+ * each result with the current friend status between the searching user
+ * and that result. Deliberately does NOT match on display_name: display
+ * names aren't unique, so searching by them can't reliably identify a
+ * single person — that's the whole reason usernames exist.
  */
 export async function searchUsersWithFriendStatus(
   query: string,
   currentUserId: string,
 ): Promise<UserSearchResult[]> {
   const supabase = createClient();
-  const trimmed = query.trim();
+  // Usernames don't include "@" — strip a leading one so "@fahad456" and
+  // "fahad456" both work, since people will naturally type either.
+  const trimmed = query.trim().replace(/^@/, "");
   if (trimmed.length < 2) return [];
 
-  // Escape PostgREST filter syntax special characters (`,`, `(`, `)`, `%`,
-  // `_`) so user input can't break out of the ilike pattern or the `.or()`
-  // filter list and inject extra conditions.
-  const safePattern = `%${escapeForIlike(trimmed)}%`;
+  // Escape ilike wildcard characters (`%`, `_`) so user input can't widen
+  // the match pattern in unexpected ways.
+  const safePattern = `${escapeForIlike(trimmed)}%`;
 
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url")
     .neq("id", currentUserId)
-    .or(`username.ilike.${safePattern},display_name.ilike.${safePattern}`)
+    .not("username", "is", null)
+    .ilike("username", safePattern)
+    .order("username", { ascending: true })
     .limit(10);
 
   if (error || !profiles?.length) return [];
@@ -86,6 +92,10 @@ export async function sendFriendRequest(
   currentUserId: string,
   otherUserId: string,
 ): Promise<void> {
+  if (currentUserId === otherUserId) {
+    throw new Error("You can't send a friend request to yourself.");
+  }
+
   const supabase = createClient();
 
   // Guard against duplicate rows: don't insert a new request if any
