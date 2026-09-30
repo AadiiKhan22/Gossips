@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquarePlus, MoreVertical, Pencil, Phone, Plus, User, UserPlus, Users } from "lucide-react";
+import { MessageSquarePlus, Pencil, Phone, Plus, User, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -55,18 +55,6 @@ export function ChatSidebar({
   className,
 }: ChatSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<SidebarTab>("chats");
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const menuRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
 
   const visibleChats =
     activeTab === "groups" ? chats.filter((chat) => chat.isGroup) : chats.filter((chat) => !chat.isGroup);
@@ -119,38 +107,7 @@ export function ChatSidebar({
               </button>
             ) : null}
 
-            <div ref={menuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="More options"
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-              className="text-gossip hover:bg-sidebar-accent flex size-9 items-center justify-center rounded-full transition-colors"
-            >
-              <MoreVertical className="size-5" />
-            </button>
 
-            {menuOpen ? (
-              <div
-                role="menu"
-                className="bg-popover absolute right-0 top-[calc(100%+0.5rem)] z-20 w-56 overflow-hidden rounded-xl border border-border/80 shadow-lg"
-              >
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 rounded-none"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onNewGroup?.();
-                  }}
-                >
-                  <Users className="size-4" />
-                  New group
-                </Button>
-              </div>
-            ) : null}
-            </div>
           </div>
         </div>
 
