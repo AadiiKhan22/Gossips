@@ -22,7 +22,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="bg-background min-h-svh">
-      <header className="border-b border-border/80 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/80 bg-background/80 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <BackToChats />
