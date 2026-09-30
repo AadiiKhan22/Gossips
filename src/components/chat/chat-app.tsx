@@ -671,7 +671,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
         {liveAnnouncement}
       </div>
       <div
-        className="fixed inset-x-0 top-0 flex h-dvh overflow-hidden bg-background overscroll-none"
+        className="fixed inset-0 flex overflow-hidden bg-background overscroll-none"
         style={
           isKeyboardOpen ? { top: viewportOffsetTop, height: viewportHeight } : undefined
         }
