@@ -23,10 +23,18 @@ export const metadata: Metadata = {
   description: "Modern messaging built for private chats, groups, and real-time conversations.",
   applicationName: "Gossips",
   keywords: ["messaging", "chat", "realtime", "gossips"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Gossips",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico?v=2", sizes: "any" },
       { url: "/favicon.png?v=2", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/favicon.ico?v=2",
     apple: "/apple-touch-icon.png?v=2",
