@@ -17,17 +17,15 @@ import * as React from "react";
  * Falls back to `window.innerHeight`/0 in environments without the
  * VisualViewport API (older browsers, SSR).
  *
- * One caveat this hook corrects for: in a normal Safari *browser tab*
- * (not an installed/standalone PWA), `visualViewport.height` excludes
- * Safari's own bottom toolbar — even though that toolbar isn't actually
- * covering our page, just sitting below it. Sizing our fixed app shell
- * to that shorter height leaves a visible gap between our bottom nav
- * and the real edge of the screen. We only trust visualViewport's
- * shrink when it's shrinking from the *top* (offsetTop > 0, which is
- * the real keyboard-covers-content case this hook exists for) or when
- * it's shrunk by more than a small browser-chrome-sized amount (a
- * genuine keyboard, not a toolbar). Otherwise we fall back to the full
- * layout viewport height so the shell reaches the true bottom edge.
+ * Important: this hook is now ONLY meant to be consulted while a
+ * keyboard is genuinely open (see `isKeyboardOpen`). For normal sizing,
+ * prefer the CSS `dvh` unit instead of `window.innerHeight` — on iOS,
+ * especially in an installed/standalone PWA, `window.innerHeight` does
+ * not reliably include the safe-area strip the home indicator sits in,
+ * while `dvh` (dynamic viewport height) is specifically designed by
+ * browser vendors to always match the true visible screen. Using
+ * `window.innerHeight` as a "safe" fallback here previously left a gap
+ * above the home indicator in standalone mode.
  */
 export function useVisualViewport() {
   // Start with a value that matches what the server rendered (there is
@@ -35,46 +33,37 @@ export function useVisualViewport() {
   // after mount. Reading window.innerHeight directly in the initial
   // state would make the client's first render differ from the
   // server-rendered HTML and trigger a hydration mismatch.
-  const [viewport, setViewport] = React.useState({ height: 0, offsetTop: 0 });
+  const [viewport, setViewport] = React.useState({ height: 0, offsetTop: 0, isKeyboardOpen: false });
 
   React.useEffect(() => {
     const vv = window.visualViewport;
 
     if (!vv) {
-      // No VisualViewport API support: fall back to window height and
-      // just accept the classic iOS bug can't be worked around here.
-      function updateFallback() {
-        setViewport({ height: window.innerHeight, offsetTop: 0 });
-      }
-      updateFallback();
-      window.addEventListener("resize", updateFallback);
-      return () => window.removeEventListener("resize", updateFallback);
+      // No VisualViewport API support: nothing to correct for, let CSS
+      // `dvh` handle sizing and never report a keyboard override.
+      return;
     }
 
-    // A small shrink relative to the full layout viewport is Safari's
-    // toolbar, not a keyboard — a real on-screen keyboard takes up far
-    // more than this on any device.
-    const TOOLBAR_SLOP_PX = 120;
+    // A real on-screen keyboard shrinks the visual viewport by a lot
+    // (typically 250px+) and/or scrolls it (offsetTop > 0). A shrink
+    // smaller than this is just Safari's own toolbar showing/hiding in
+    // a plain browser tab, not a keyboard — ignore it and let CSS `dvh`
+    // keep controlling layout height in that case.
+    const KEYBOARD_SHRINK_THRESHOLD_PX = 150;
 
     function update() {
       if (!vv) return;
       const shrunk = window.innerHeight - vv.height;
-      const looksLikeKeyboard = vv.offsetTop > 0 || shrunk > TOOLBAR_SLOP_PX;
-      setViewport(
-        looksLikeKeyboard
-          ? { height: vv.height, offsetTop: vv.offsetTop }
-          : { height: window.innerHeight, offsetTop: 0 },
-      );
+      const isKeyboardOpen = vv.offsetTop > 0 || shrunk > KEYBOARD_SHRINK_THRESHOLD_PX;
+      setViewport({ height: vv.height, offsetTop: vv.offsetTop, isKeyboardOpen });
     }
 
     update();
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
-    window.addEventListener("resize", update);
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
     };
   }, []);
 

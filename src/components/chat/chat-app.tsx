@@ -72,7 +72,11 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
   const [isOtherBlocked, setIsOtherBlocked] = React.useState(false);
   const [isBlockedByOther, setIsBlockedByOther] = React.useState(false);
   const [senderInfoById, setSenderInfoById] = React.useState<Map<string, ConversationMemberInfo>>(new Map());
-  const { height: viewportHeight, offsetTop: viewportOffsetTop } = useVisualViewport();
+  const {
+    height: viewportHeight,
+    offsetTop: viewportOffsetTop,
+    isKeyboardOpen,
+  } = useVisualViewport();
 
   // Lock the page itself to the viewport while the chat screen is
   // mounted. Mobile Safari otherwise lets the whole page scroll when the
@@ -152,13 +156,6 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
   const refreshPendingRequestCount = React.useCallback(() => {
     void fetchIncomingFriendRequestCount(user.id).then(setPendingRequestCount);
   }, [user.id]);
-
-  // Also refresh the chat list, so a newly-accepted friend's chat shows up
-  // in the sidebar right away instead of only after the first message.
-  const handleFriendRequestsChanged = React.useCallback(() => {
-    refreshPendingRequestCount();
-    void fetchConversationsClient(user.id).then(setChats);
-  }, [refreshPendingRequestCount, user.id]);
 
   React.useEffect(() => {
     refreshPendingRequestCount();
@@ -674,8 +671,10 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
         {liveAnnouncement}
       </div>
       <div
-        className="fixed inset-x-0 flex overflow-hidden bg-background overscroll-none"
-        style={{ top: viewportOffsetTop, height: viewportHeight }}
+        className="fixed inset-x-0 top-0 flex h-dvh overflow-hidden bg-background overscroll-none"
+        style={
+          isKeyboardOpen ? { top: viewportOffsetTop, height: viewportHeight } : undefined
+        }
       >
         <ChatSidebar
           user={user}
@@ -747,7 +746,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
         open={friendRequestsOpen}
         onOpenChange={setFriendRequestsOpen}
         currentUserId={user.id}
-        onRequestsChanged={handleFriendRequestsChanged}
+        onRequestsChanged={refreshPendingRequestCount}
       />
 
       <ForwardDialog
