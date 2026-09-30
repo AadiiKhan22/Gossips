@@ -139,7 +139,7 @@ export function ConversationPanel({
 
   return (
     <section className={cn("bg-background flex min-w-0 flex-1 flex-col overflow-hidden", className)}>
-      <header className="flex items-center gap-3 border-b border-border/70 px-4 py-3 sm:px-6">
+      <header className="flex items-center gap-3 border-b border-border/70 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
         {onBack ? (
           <Button
             variant="ghost"

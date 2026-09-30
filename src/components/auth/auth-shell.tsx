@@ -12,7 +12,7 @@ interface AuthShellProps {
 export function AuthShell({ title, description, children, footer }: AuthShellProps) {
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <header className="border-b border-border/80 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/80 bg-background/80 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <GossipsLogo size="sm" />
           <ThemeToggle />
