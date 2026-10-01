@@ -67,11 +67,78 @@ export function MessageBubble({
   const [copied, setCopied] = React.useState(false);
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [actionError, setActionError] = React.useState<string | null>(null);
+  const [menuPlacement, setMenuPlacement] = React.useState<"down" | "up">("down");
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const longPressTimerRef = React.useRef<number | null>(null);
+  const longPressStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const longPressFiredRef = React.useRef(false);
 
   const isDeleted = Boolean(message.deleted_at);
   const isImageAttachment = message.attachment_type?.startsWith("image/") ?? false;
   const isAudioAttachment = message.attachment_type?.startsWith("audio/") ?? false;
+
+  const openMenu = React.useCallback(() => {
+    // Flip the menu upward when there isn't enough room below the bubble
+    // (e.g. messages near the bottom of a phone screen).
+    const rect = containerRef.current?.getBoundingClientRect();
+    const MENU_HEIGHT = 260;
+    if (rect && rect.top + 24 + MENU_HEIGHT > window.innerHeight && rect.top > MENU_HEIGHT) {
+      setMenuPlacement("up");
+    } else {
+      setMenuPlacement("down");
+    }
+    setShowEmojiPicker(false);
+    setShowMenu(true);
+  }, []);
+
+  const clearLongPress = React.useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  }, []);
+
+  React.useEffect(() => clearLongPress, [clearLongPress]);
+
+  function isLongPressIgnored(target: EventTarget | null) {
+    return (
+      target instanceof Element && Boolean(target.closest('[role="menu"], textarea, [data-no-longpress]'))
+    );
+  }
+
+  function handleTouchStart(event: React.TouchEvent) {
+    if (isEditing || isLongPressIgnored(event.target) || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    longPressFiredRef.current = false;
+    longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
+    clearLongPress();
+    longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressFiredRef.current = true;
+      openMenu();
+    }, 450);
+  }
+
+  function handleTouchMove(event: React.TouchEvent) {
+    const start = longPressStartRef.current;
+    if (!start) return;
+    const touch = event.touches[0];
+    if (Math.abs(touch.clientX - start.x) > 10 || Math.abs(touch.clientY - start.y) > 10) {
+      clearLongPress();
+    }
+  }
+
+  function handleTouchEnd() {
+    clearLongPress();
+    if (longPressFiredRef.current) {
+      // Swallow the click that follows a long press (e.g. image lightbox).
+      window.setTimeout(() => {
+        longPressFiredRef.current = false;
+      }, 400);
+    }
+  }
 
   React.useEffect(() => {
     if (!showMenu && !showEmojiPicker) return;
@@ -91,9 +158,11 @@ export function MessageBubble({
     }
 
     document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick as unknown as EventListener);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick as unknown as EventListener);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [showMenu, showEmojiPicker]);
@@ -161,7 +230,29 @@ export function MessageBubble({
       {showGroupAvatar ? (
         <UserAvatar name={senderName ?? "?"} avatarUrl={avatarUrl} size="xs" className="mb-0.5 shrink-0" />
       ) : null}
-      <div ref={containerRef} className="group relative max-w-[85%] sm:max-w-[70%]">
+      <div
+        ref={containerRef}
+        className={cn(
+          "group relative max-w-[85%] sm:max-w-[70%]",
+          !isEditing && "pointer-coarse:[-webkit-touch-callout:none] pointer-coarse:select-none",
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onClickCapture={(event) => {
+          if (longPressFiredRef.current) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
+        onContextMenu={(event) => {
+          // Touch long-press fires the browser context menu; replace it with ours.
+          if (window.matchMedia("(pointer: coarse)").matches && !isEditing) {
+            event.preventDefault();
+          }
+        }}
+      >
         {showEmojiPicker ? (
           <div
             className={cn(
@@ -206,7 +297,7 @@ export function MessageBubble({
         {/* Hover-revealed chevron -- always top-right, CSS-only opacity toggle */}
         <button
           type="button"
-          onClick={() => setShowMenu((value) => !value)}
+          onClick={() => (showMenu ? setShowMenu(false) : openMenu())}
           aria-label="Message actions"
           aria-haspopup="true"
           aria-expanded={showMenu}
@@ -224,7 +315,8 @@ export function MessageBubble({
             role="menu"
             aria-label="Message actions"
             className={cn(
-              "bg-background border-border absolute top-6 z-30 w-48 rounded-lg border py-1 shadow-lg",
+              "bg-background border-border absolute z-30 w-48 rounded-lg border py-1 shadow-lg",
+              menuPlacement === "up" ? "bottom-full mb-1" : "top-6",
               isOwn ? "right-1" : "left-1",
             )}
           >
