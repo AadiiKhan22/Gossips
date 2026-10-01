@@ -119,16 +119,11 @@
 
   html,
   body {
-    /* Our real app UI lives in a `position: fixed` shell (see
-       ChatApp), which is removed from normal document flow — so the
-       <body> element itself has almost no natural height. Without
-       locking it down, iOS (especially inside an installed/standalone
-       PWA) can still let the empty <body> document bounce-scroll,
-       which can visibly settle in a "scrolled" state and expose blank
-       space below our fixed nav that looks like a rendering gap but is
-       really just the real, empty page peeking out from under it. */
-    height: 100%;
-    overflow: hidden;
+    /* Prevent iOS bounce/rubber-band scroll from revealing blank space
+       beyond fixed-position content (used by the main chat screen).
+       Deliberately NOT setting height/overflow here — this app has
+       normal, longer-than-one-screen pages (profile, settings, etc.)
+       that need real body scrolling to keep working. */
     overscroll-behavior: none;
   }
 
