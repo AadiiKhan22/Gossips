@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ChatMainPanel } from "@/components/chat/chat-main-panel";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
+import { ViewportDebugOverlay } from "@/components/chat/viewport-debug-overlay";
 import { CallProvider } from "@/components/calls/call-provider";
 import type { ChatManageAction } from "@/components/chat/chat-list-item";
 import { ConversationPanel } from "@/components/chat/conversation-panel";
@@ -676,6 +677,7 @@ export function ChatApp({ user, initialChats }: ChatAppProps) {
           isKeyboardOpen ? { top: viewportOffsetTop, height: viewportHeight } : undefined
         }
       >
+        <ViewportDebugOverlay />
         <ChatSidebar
           user={user}
           chats={chatsWithUnread}
