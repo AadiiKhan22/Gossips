@@ -90,7 +90,7 @@ export function MessageList({
   const otherReadAtMs = otherReadAt ? new Date(otherReadAt).getTime() : null;
 
   return (
-    <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-6">
+    <div className="flex-1 space-y-3 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-6">
       {messages.map((message) => {
         const isOwn = message.sender_id === currentUserId;
         const isSeen =

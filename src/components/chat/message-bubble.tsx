@@ -25,6 +25,7 @@ import type { ReactionSummary } from "@/lib/chat/reactions";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/types/database";
 
+const SWIPE_THRESHOLD = 56;
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 interface MessageBubbleProps {
@@ -72,6 +73,8 @@ export function MessageBubble({
   const longPressTimerRef = React.useRef<number | null>(null);
   const longPressStartRef = React.useRef<{ x: number; y: number } | null>(null);
   const longPressFiredRef = React.useRef(false);
+  const swipeRef = React.useRef<{ x: number; y: number; mode: "h" | "v" | null; reached: boolean } | null>(null);
+  const swipeIconRef = React.useRef<HTMLDivElement>(null);
 
   const isDeleted = Boolean(message.deleted_at);
   const isImageAttachment = message.attachment_type?.startsWith("image/") ?? false;
@@ -111,7 +114,11 @@ export function MessageBubble({
     if (isEditing || isLongPressIgnored(event.target) || event.touches.length !== 1) return;
     const touch = event.touches[0];
     longPressFiredRef.current = false;
-    longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeRef.current =
+      onReply && !showMenu && !showEmojiPicker
+        ? { x: touch.clientX, y: touch.clientY, mode: null, reached: false }
+        : null;
+    if (containerRef.current) containerRef.current.style.transition = "none";
     clearLongPress();
     longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
     longPressTimerRef.current = window.setTimeout(() => {
@@ -122,6 +129,29 @@ export function MessageBubble({
   }
 
   function handleTouchMove(event: React.TouchEvent) {
+    const swipe = swipeRef.current;
+    if (swipe) {
+      const dx = event.touches[0].clientX - swipe.x;
+      const dy = event.touches[0].clientY - swipe.y;
+      if (swipe.mode === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        // Lock to a horizontal right-swipe only when clearly more horizontal than vertical.
+        swipe.mode = dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.5 ? "h" : "v";
+        if (swipe.mode === "h") clearLongPress();
+      }
+      if (swipe.mode === "h") {
+        const offset = dx <= SWIPE_THRESHOLD ? Math.max(dx, 0) : Math.min(SWIPE_THRESHOLD + (dx - SWIPE_THRESHOLD) * 0.25, 72);
+        const progress = Math.min(Math.max(dx, 0) / SWIPE_THRESHOLD, 1);
+        if (containerRef.current) containerRef.current.style.transform = `translateX(${offset}px)`;
+        if (swipeIconRef.current) {
+          swipeIconRef.current.style.opacity = String(progress);
+          swipeIconRef.current.style.transform = `translateY(-50%) scale(${0.6 + 0.4 * progress})`;
+        }
+        const reached = dx >= SWIPE_THRESHOLD;
+        if (reached && !swipe.reached) navigator.vibrate?.(10);
+        swipe.reached = reached;
+      }
+    }
+
     const start = longPressStartRef.current;
     if (!start) return;
     const touch = event.touches[0];
@@ -130,8 +160,22 @@ export function MessageBubble({
     }
   }
 
-  function handleTouchEnd() {
+  function handleTouchEnd(cancelled = false) {
     clearLongPress();
+    const swipe = swipeRef.current;
+    swipeRef.current = null;
+    if (swipe?.mode === "h") {
+      const node = containerRef.current;
+      if (node) {
+        node.style.transition = "transform 200ms ease-out";
+        node.style.transform = "";
+        window.setTimeout(() => {
+          node.style.transition = "";
+        }, 220);
+      }
+      if (swipeIconRef.current) swipeIconRef.current.style.opacity = "0";
+      if (swipe.reached && !cancelled) onReply?.(message);
+    }
     if (longPressFiredRef.current) {
       // Swallow the click that follows a long press (e.g. image lightbox).
       window.setTimeout(() => {
@@ -233,13 +277,13 @@ export function MessageBubble({
       <div
         ref={containerRef}
         className={cn(
-          "group relative max-w-[85%] sm:max-w-[70%]",
+          "group relative max-w-[85%] touch-pan-y sm:max-w-[70%]",
           !isEditing && "pointer-coarse:[-webkit-touch-callout:none] pointer-coarse:select-none",
         )}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        onTouchEnd={() => handleTouchEnd(false)}
+        onTouchCancel={() => handleTouchEnd(true)}
         onClickCapture={(event) => {
           if (longPressFiredRef.current) {
             event.preventDefault();
@@ -253,6 +297,17 @@ export function MessageBubble({
           }
         }}
       >
+        {onReply ? (
+          <div
+            ref={swipeIconRef}
+            aria-hidden="true"
+            style={{ opacity: 0, transform: "translateY(-50%) scale(0.6)" }}
+            className="bg-muted text-muted-foreground pointer-events-none absolute top-1/2 -left-10 flex size-8 items-center justify-center rounded-full"
+          >
+            <Reply className="size-4" />
+          </div>
+        ) : null}
+
         {showEmojiPicker ? (
           <div
             className={cn(
