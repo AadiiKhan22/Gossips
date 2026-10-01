@@ -29,6 +29,17 @@ export const metadata: Metadata = {
     title: "Gossips",
     statusBarStyle: "black-translucent",
   },
+  other: {
+    // Next's `appleWebApp.capable` metadata only emits the generic
+    // `mobile-web-app-capable` tag, not the iOS-specific one — and iOS
+    // Safari ONLY honors `apple-mobile-web-app-capable`, not the
+    // generic Android/Chrome tag. Without this exact tag, iOS treats
+    // an "Add to Home Screen" install as a glorified bookmark rather
+    // than a true standalone app, which is why viewport/safe-area
+    // sizing behaved inconsistently. Setting it explicitly here
+    // guarantees it's actually present in the rendered <head>.
+    "apple-mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico?v=2", sizes: "any" },
