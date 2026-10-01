@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 
 import { PasswordInput } from "@/components/auth/password-input";
@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/client";
 import { hasFieldErrors, validateLoginForm, type AuthFieldErrors } from "@/lib/validations/auth";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
   const fieldDark =
@@ -103,7 +102,16 @@ export function LoginForm() {
       }
 
       setFailedAttempts(0);
-      router.replace(redirectTo);
+      // A hard navigation here (not router.replace) is deliberate: right
+      // after a successful login, mobile Safari/Chrome shows their own
+      // native "Save Password?" sheet. That sheet can briefly take focus
+      // away from the page, and a client-side (SPA) router transition
+      // started at that exact moment can get stuck — leaving the person
+      // stuck on the login screen until they background and reopen the
+      // app. A full navigation isn't affected by that native UI at all,
+      // and it also guarantees the server sees the freshly-set session
+      // cookie immediately rather than depending on client-side state.
+      window.location.assign(redirectTo);
     } catch {
       setFormError("Something went wrong. Please try again.");
     } finally {
