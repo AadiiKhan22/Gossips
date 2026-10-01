@@ -15,6 +15,7 @@ interface MessageComposerProps {
   onSend: (content: string, attachment?: ChatAttachment, replyToMessageId?: string) => Promise<void>;
   disabled?: boolean;
   replyingTo?: Message | null;
+  replyingToName?: string;
   onCancelReply?: () => void;
   onTyping?: () => void;
   onStoppedTyping?: () => void;
@@ -32,6 +33,7 @@ export function MessageComposer({
   onSend,
   disabled = false,
   replyingTo = null,
+  replyingToName,
   onCancelReply,
   onTyping,
   onStoppedTyping,
@@ -192,9 +194,14 @@ export function MessageComposer({
       {replyingTo ? (
         <div className="bg-muted border-gossip mb-2 flex items-center gap-2 rounded-lg border-l-2 p-2">
           <Reply className="text-gossip size-4 shrink-0" />
-          <span className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
-            {replyingTo.content || attachmentPreviewLabel(replyingTo)}
-          </span>
+          <div className="min-w-0 flex-1">
+            {replyingToName ? (
+              <p className="text-gossip truncate text-xs font-semibold">{replyingToName}</p>
+            ) : null}
+            <p className="text-muted-foreground truncate text-xs">
+              {replyingTo.content || attachmentPreviewLabel(replyingTo)}
+            </p>
+          </div>
           <Button
             type="button"
             variant="ghost"

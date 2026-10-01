@@ -356,6 +356,13 @@ export function ConversationPanel({
         onSend={onSend}
         disabled={messagesLoading || isOtherBlocked || isBlockedByOther}
         replyingTo={replyingTo}
+        replyingToName={
+          replyingTo
+            ? replyingTo.sender_id === currentUserId
+              ? "You"
+              : (senderInfoById?.get(replyingTo.sender_id)?.name ?? conversation.name)
+            : undefined
+        }
         onCancelReply={onCancelReply}
         onTyping={onTyping}
         onStoppedTyping={onStoppedTyping}
