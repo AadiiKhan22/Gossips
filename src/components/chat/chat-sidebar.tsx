@@ -191,7 +191,7 @@ export function ChatSidebar({
         ) : null}
       </div>
 
-      <nav className="flex items-center justify-around border-t border-sidebar-border bg-sidebar py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <nav className="flex items-center justify-around border-t border-sidebar-border bg-sidebar pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <BottomNavButton
           icon={<MessageSquarePlus className="size-5" />}
           label="Chats"

@@ -185,7 +185,7 @@ export function MessageComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border/70 bg-background/95 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm"
+      className="border-t border-border/70 bg-background/95 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm"
     >
       {error ? <p className="text-destructive mb-2 text-sm">{error}</p> : null}
 
