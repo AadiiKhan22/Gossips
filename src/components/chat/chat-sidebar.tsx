@@ -56,6 +56,29 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<SidebarTab>("chats");
 
+  // Single source of truth for the bottom-nav safe-area spacing.
+  // In an installed iOS web app the page area can end above the physical
+  // screen bottom, so part of the home-indicator zone is already outside
+  // the page. Subtract that measured gap from the safe-area inset so the
+  // nav is neither cut off nor floating too high.
+  const [viewportGap, setViewportGap] = React.useState(0);
+  React.useEffect(() => {
+    function measure() {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const gap = window.screen.height - window.innerHeight;
+      setViewportGap(standalone && gap > 0 && gap <= 80 ? Math.round(gap) : 0);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   const visibleChats =
     activeTab === "groups" ? chats.filter((chat) => chat.isGroup) : chats.filter((chat) => !chat.isGroup);
 
@@ -191,7 +214,10 @@ export function ChatSidebar({
         ) : null}
       </div>
 
-      <nav className="flex items-center justify-around border-t border-sidebar-border bg-sidebar pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <nav
+        className="flex items-center justify-around border-t border-sidebar-border bg-sidebar pt-2"
+        style={{ paddingBottom: `max(0.5rem, calc(env(safe-area-inset-bottom) - ${viewportGap}px))` }}
+      >
         <BottomNavButton
           icon={<MessageSquarePlus className="size-5" />}
           label="Chats"
