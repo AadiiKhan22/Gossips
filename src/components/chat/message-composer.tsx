@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useViewportGap } from "@/lib/hooks/use-viewport-gap";
 import { useVoiceRecorder } from "@/lib/chat/use-voice-recorder";
 import { playMessageSentSound, playRecordStartSound } from "@/lib/audio/ui-sounds";
 import { uploadChatMedia, type ChatAttachment } from "@/lib/storage/chat-media";
@@ -38,6 +39,7 @@ export function MessageComposer({
   onTyping,
   onStoppedTyping,
 }: MessageComposerProps) {
+  const viewportGap = useViewportGap();
   const [content, setContent] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [isSending, setIsSending] = React.useState(false);
@@ -187,7 +189,8 @@ export function MessageComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border/70 bg-background/95 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm"
+      className="border-t border-border/70 bg-background/95 px-4 pt-4 backdrop-blur-sm"
+      style={{ paddingBottom: `calc(1rem + max(0px, env(safe-area-inset-bottom) - ${viewportGap}px))` }}
     >
       {error ? <p className="text-destructive mb-2 text-sm">{error}</p> : null}
 

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import type { NotificationPermissionState } from "@/lib/chat/notifications";
 import { cn } from "@/lib/utils";
 import type { ChatListItem, ChatUserSummary } from "@/types/chat-ui";
+import { useViewportGap } from "@/lib/hooks/use-viewport-gap";
 
 type SidebarTab = "chats" | "groups" | "calls";
 
@@ -56,28 +57,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<SidebarTab>("chats");
 
-  // Single source of truth for the bottom-nav safe-area spacing.
-  // In an installed iOS web app the page area can end above the physical
-  // screen bottom, so part of the home-indicator zone is already outside
-  // the page. Subtract that measured gap from the safe-area inset so the
-  // nav is neither cut off nor floating too high.
-  const [viewportGap, setViewportGap] = React.useState(0);
-  React.useEffect(() => {
-    function measure() {
-      const standalone =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as Navigator & { standalone?: boolean }).standalone === true;
-      const gap = window.screen.height - window.innerHeight;
-      setViewportGap(standalone && gap > 0 && gap <= 80 ? Math.round(gap) : 0);
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", measure);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", measure);
-    };
-  }, []);
+  const viewportGap = useViewportGap();
 
   const visibleChats =
     activeTab === "groups" ? chats.filter((chat) => chat.isGroup) : chats.filter((chat) => !chat.isGroup);
